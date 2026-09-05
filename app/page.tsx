@@ -1,31 +1,124 @@
 'use client';
 
 import { createElement, useEffect, useRef, useState } from 'react';
-import { ArrowDown, AtSign, Globe, Mail, Rss, Send, Sparkles } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, AtSign, Download, Globe, Mail, MousePointer2, Rss, Send, Sparkles } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
-const heroStickers = [
-  { id: 'burst-one', className: 'burst burst-yellow', label: '!' },
-  { id: 'burst-two', className: 'burst burst-cyan', label: '*' },
-  { id: 'curious', className: 'pill pill-one', label: 'curious' },
-  { id: 'making', className: 'pill pill-two', label: 'always making' },
+type Locale = 'zh' | 'en';
+
+type ProjectCopy = {
+  title: string;
+  tag: string;
+  text: string;
+  overview: string;
+  route: string[];
+  outcome: string[];
+};
+
+type Project = Record<Locale, ProjectCopy>;
+
+const projects: Project[] = [
+  {
+    zh: {
+      title: '游戏行业日报系统',
+      tag: '内容自动化',
+      text: '聚合多源游戏资讯，用 AI 评分、分类、去重和翻译，每日自动生成并推送日报。',
+      overview: '把散落在微信公众号、海外媒体、播客与 Google News 的行业信息汇到一个可快速浏览的日报中。',
+      route: [
+        '在本地 Mac 上抓取 75 个微信公众号、海外媒体 RSS、播客和 Google News。',
+        '使用 DeepSeek 为候选文章评分、分类、翻译标题和摘要，仅保留高价值内容。',
+        '以 URL 与标题去重，合并同一事件的多篇报道，并保留全部来源链接。',
+        '通过 LaunchAgent 每天 6:30 运行，推送飞书，同时把 feed.json 同步到 GitHub。',
+      ],
+      outcome: [
+        '每日将大量信息压缩为约 20–40 条可读日报。',
+        '支持深度拆解、行业资讯与泛游戏内容三类阅读入口。',
+        '用健康检查发现抓取异常，减少无内容日报的风险。',
+      ],
+    },
+    en: {
+      title: 'Game Industry Daily',
+      tag: 'Content Automation',
+      text: 'A daily game-industry brief that collects, ranks, translates, deduplicates, and delivers relevant coverage.',
+      overview: 'A focused daily read built from scattered game-industry reporting across Chinese and international sources.',
+      route: [
+        'Collects 75 WeChat channels, international RSS feeds, podcasts, and Google News on a local Mac.',
+        'Uses DeepSeek to score, categorize, and translate titles and summaries, keeping only valuable stories.',
+        'Deduplicates by URL and title, then combines coverage of the same event with source links intact.',
+        'Runs through LaunchAgent at 6:30 each morning, sends a Feishu update, and syncs feed.json to GitHub.',
+      ],
+      outcome: [
+        'Turns a high-volume news stream into a readable 20–40 item daily brief.',
+        'Organizes reading into analysis, industry intelligence, and broader game culture.',
+        'Includes health checks to surface collection failures before an empty report is sent.',
+      ],
+    },
+  },
+  {
+    zh: {
+      title: '动态个人形象',
+      tag: '角色系统',
+      text: '以贴纸为核心的头像系统，支持鼠标跟随、状态切换与可撕互动。',
+      overview: '将个人头像从静态图片变成能回应用户动作的网页角色。',
+      route: ['使用 React 管理角色开合、提示与交互状态。', '用 CSS 变量和 requestAnimationFrame 制作平滑的鼠标惯性。', '接入 Sticker Forge，为人物和文字提供可撕开的材质效果。'],
+      outcome: ['角色可跟随光标微动，并在点击后切换表情。', '贴纸可以被撕开后自动回弹，首屏拥有更强的探索感。'],
+    },
+    en: {
+      title: 'Animated Identity',
+      tag: 'Character System',
+      text: 'A sticker-led avatar system with cursor following, state changes, and peel interactions.',
+      overview: 'Turns a static portrait into a web character that responds to a visitor’s movement.',
+      route: ['Uses React to coordinate the character, hint, and interaction states.', 'Combines CSS variables with requestAnimationFrame for eased cursor inertia.', 'Uses Sticker Forge to give the character and type a peelable material treatment.'],
+      outcome: ['The character subtly follows the cursor and changes expression on click.', 'Stickers peel and return, giving the first screen a sense of discovery.'],
+    },
+  },
+  {
+    zh: {
+      title: '会呼吸的作品集',
+      tag: '网页体验',
+      text: '让个人网站像移动拼贴一样展开，而不是静态的个人资料页。',
+      overview: '把作品浏览设计成连续的章节体验，让视觉和内容在滚动中慢慢显现。',
+      route: ['使用 Vinext 与 React 搭建可持续迭代的个人网站。', '使用 IntersectionObserver 识别当前章节并同步导航状态。', '用 CSS scroll snap、分层进入和柔和背景光组织页面节奏。'],
+      outcome: ['每个章节都能平滑进入视野，信息层次更容易阅读。', '中英内容可在同一套项目详情中切换，无需双列排版。'],
+    },
+    en: {
+      title: 'Living Portfolio',
+      tag: 'Web Experience',
+      text: 'A personal site that opens like a moving collage instead of a static profile.',
+      overview: 'A chapter-based browsing experience where imagery and writing reveal themselves over a scroll.',
+      route: ['Built with Vinext and React for an iteratable personal-site foundation.', 'Uses IntersectionObserver to track the current chapter and synchronize navigation.', 'Combines CSS scroll snap, layered reveals, and soft ambient light to set the page rhythm.'],
+      outcome: ['Each section settles into view with a clearer information hierarchy.', 'Project details use one language switch instead of parallel bilingual columns.'],
+    },
+  },
+  {
+    zh: {
+      title: '小型产品实验',
+      tag: '交互原型',
+      text: '围绕直接交互、鲜明动效和明确用途制作的小型网页实验。',
+      overview: '用小而完整的原型快速检验一个想法是否值得继续做下去。',
+      route: ['从单一用户动作出发，先定义最小可用的交互闭环。', '在浏览器内迭代动画节奏、反馈状态和响应式布局。', '保留轻量结构，让新的实验可以快速替换和扩展。'],
+      outcome: ['每个实验都有可以立即体验的核心动作。', '通过短周期制作积累可复用的界面与动效语言。'],
+    },
+    en: {
+      title: 'Tiny Tools',
+      tag: 'Product Experiments',
+      text: 'Small web experiments built around direct interaction, expressive motion, and a useful core.',
+      overview: 'Compact, complete prototypes that test whether an idea deserves a deeper investment.',
+      route: ['Starts with one user action and defines the smallest useful interaction loop.', 'Iterates on motion timing, feedback states, and responsive layouts in the browser.', 'Keeps the structure light so experiments can be replaced and extended quickly.'],
+      outcome: ['Each experiment has a core action that can be tried immediately.', 'Short build cycles create reusable interaction and visual patterns.'],
+    },
+  },
 ];
 
-const projects = [
-  {
-    title: 'Animated Identity',
-    tag: 'Character System',
-    text: 'A sticker-led avatar system with cursor following, expression swaps, and future layer replacement.',
-  },
-  {
-    title: 'Living Portfolio',
-    tag: 'Web Experience',
-    text: 'A personal homepage that behaves like a moving collage instead of a static profile.',
-  },
-  {
-    title: 'Tiny Tools',
-    tag: 'Product Experiments',
-    text: 'Small web experiments with direct interactions, bold motion, and a useful core.',
-  },
+const textStickers = [
+  { id: 'curious', className: 'text-sticker text-one', label: 'curious' },
+  { id: 'making', className: 'text-sticker text-two', label: 'always making' },
 ];
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -123,8 +216,15 @@ export default function Home() {
   const [stickerState, setStickerState] = useState<'idle' | 'near' | 'clicked'>('idle');
   const [isOpen, setIsOpen] = useState(false);
   const [isRipping, setIsRipping] = useState(false);
-  const [navOpen, setNavOpen] = useState(true);
+  const [navOpen, setNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
+  const [phone, setPhone] = useState('');
+  const [resumeUnlocked, setResumeUnlocked] = useState(false);
+  const [resumeError, setResumeError] = useState('');
+  const [showPeelHint, setShowPeelHint] = useState(true);
   const tagTimer = useRef<number | null>(null);
+  const [language, setLanguage] = useState<Locale>('zh');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   // True while a rip-switch is settling: the NEW sticker should restore from the
   // fully-peeled state (a smooth close-up) instead of a bouncy entrance.
   const restoreAfterRip = useRef(false);
@@ -149,6 +249,21 @@ export default function Home() {
     };
     raf = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(raf);
+  }, []);
+
+  useEffect(() => {
+    const panels = Array.from(document.querySelectorAll<HTMLElement>('.scroll-panel'));
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        });
+      },
+      { threshold: 0.52 },
+    );
+
+    panels.forEach((panel) => observer.observe(panel));
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -270,7 +385,7 @@ export default function Home() {
       }
 
       await Promise.all(
-        heroStickers.map(async (item, index) => {
+        textStickers.map(async (item) => {
           const element = document.getElementById(`forge-${item.id}`) as StickerForgeElement | null;
           if (!element) return;
           await element.setSource({
@@ -278,35 +393,19 @@ export default function Home() {
             text: item.label,
             fontFamily: 'Arial Rounded MT Bold, Arial Black, sans-serif',
             fontWeight: 900,
-            color: '#071735',
-            richText: {
-              blocks: [
-                {
-                  align: 'center',
-                  lineHeight: 1.05,
-                  runs: [
-                    {
-                      text: item.label,
-                      color: index % 2 === 0 ? '#071735' : '#19191d',
-                      fontSize: 34,
-                      fontWeight: 900,
-                      underline: false,
-                    },
-                  ],
-                },
-              ],
-            },
+            color: '#3f7186',
           });
           element.setOptions({
             ...forgeOptions,
-            outline: { width: 14, color: '#ffffff' },
-            shadow: { ...forgeOptions.shadow, blur: 18, distance: 12 },
+            outline: { width: 14, color: '#fffdf8' },
+            shadow: { ...forgeOptions.shadow, blur: 16, distance: 10 },
             peel: { ...forgeOptions.peel, grabWidth: 22, maxAngle: 3.2 },
             sound: { ...forgeOptions.sound, volume: 0.38 },
-            tilt: index % 2 === 0 ? -6 : 5,
+            tilt: item.id === 'curious' ? -6 : 5,
           });
         }),
       );
+
     };
 
     setupForge().catch(() => {
@@ -352,7 +451,19 @@ export default function Home() {
   };
 
   const handleStickerClick = () => {
+    setShowPeelHint(false);
     runRipSwitch();
+  };
+
+  const handleTextStickerClick = (item: (typeof textStickers)[number]) => {
+    setShowPeelHint(false);
+    if (tagTimer.current) window.clearTimeout(tagTimer.current);
+    const tag = document.getElementById(`forge-${item.id}`) as StickerForgeElement | null;
+    tag?.setPeelProgress?.(0.82, {
+      origin: { x: 0.9, y: 0.1 },
+      target: { x: 1.24, y: -0.12 },
+    });
+    tagTimer.current = window.setTimeout(() => tag?.reappear?.(), 700);
   };
 
   const autoSwitched = useRef(false);
@@ -369,15 +480,16 @@ export default function Home() {
     return () => window.clearTimeout(t);
   }, [phase]);
 
-  const handleTagClick = (item: (typeof heroStickers)[number]) => {
-    if (tagTimer.current) window.clearTimeout(tagTimer.current);
-    const tag = document.getElementById(`forge-${item.id}`) as StickerForgeElement | null;
-    tag?.setPeelProgress?.(0.82, {
-      origin: { x: 0.9, y: 0.1 },
-      target: { x: 1.24, y: -0.12 },
-    });
-
-    tagTimer.current = window.setTimeout(() => tag?.reappear?.(), 700);
+  const unlockResume = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const normalized = phone.replace(/[\s()-]/g, '').replace(/^\+86/, '');
+    if (!/^1[3-9]\d{9}$/.test(normalized)) {
+      setResumeUnlocked(false);
+      setResumeError('请输入有效的中国大陆手机号');
+      return;
+    }
+    setResumeError('');
+    setResumeUnlocked(true);
   };
 
   const loaded = phase !== 'loading';
@@ -394,9 +506,11 @@ export default function Home() {
 
       <nav className="top-nav" aria-label="Primary navigation">
         <div className="top-nav-right">
-          <a className="primary-cta" href="#contact">
-            Get in Touch
-          </a>
+          <span className="site-name">Li Qiuyue&apos;s website</span>
+          <div className="language-switch" aria-label="Project language">
+            <button className={language === 'zh' ? 'is-active' : ''} type="button" onClick={() => setLanguage('zh')}>中</button>
+            <button className={language === 'en' ? 'is-active' : ''} type="button" onClick={() => setLanguage('en')}>EN</button>
+          </div>
           <button
             className={`menu-toggle ${navOpen ? 'is-open' : ''}`}
             type="button"
@@ -408,30 +522,34 @@ export default function Home() {
       </nav>
 
       <nav className={`side-nav ${navOpen ? 'is-open' : 'is-closed'}`} aria-label="Section navigation">
-        <a href="#about">About</a>
-        <a href="#projects">Projects</a>
-        <a href="#contact">Contact</a>
+        <a className={activeSection === 'about' ? 'is-active' : ''} href="#about" aria-current={activeSection === 'about' ? 'page' : undefined}>About</a>
+        <a className={activeSection === 'projects' ? 'is-active' : ''} href="#projects" aria-current={activeSection === 'projects' ? 'page' : undefined}>Projects</a>
+        <a className={activeSection === 'contact' ? 'is-active' : ''} href="#contact" aria-current={activeSection === 'contact' ? 'page' : undefined}>Contact</a>
       </nav>
 
-      <section id="home" className="hero-stage" aria-label="Animated sticker hero">
+      <section id="home" className={`hero-stage scroll-panel ${activeSection === 'home' ? 'is-in-view' : ''}`} aria-label="Animated sticker hero">
+        <div className="hero-kicker">01 / PERSONAL FIELD NOTES</div>
         <div className="hero-name" aria-hidden="true">
-          Li Qiuyue
+          <span>Lili</span>
         </div>
 
-        <div className="sticker-orbit" aria-label="Floating sticker links">
-          {heroStickers.map((item) => (
+        <div className="sticker-orbit" aria-label="Interactive text stickers">
+          {textStickers.map((item) => (
             <button
               key={item.id}
               className={`${item.className} peel-sticker`}
               type="button"
-              aria-label={`${item.label} sticker`}
-              onClick={() => handleTagClick(item)}
+              aria-label={`Peel ${item.label} sticker`}
+              onClick={() => handleTextStickerClick(item)}
             >
-              {createElement('sticker-forge', {
-                id: `forge-${item.id}`,
-              })}
+              {createElement('sticker-forge', { id: `forge-${item.id}` })}
             </button>
           ))}
+        </div>
+
+        <div className="hero-copy">
+          <p>Ideas with a pulse.</p>
+          <p>Made to be held, heard, and remembered.</p>
         </div>
 
         <button
@@ -447,10 +565,18 @@ export default function Home() {
           })}
         </button>
 
+        {showPeelHint && (
+          <div className="peel-hint" aria-hidden="true">
+            <span className="peel-hint-icon"><MousePointer2 size={16} /></span>
+            <span>撕开试试</span>
+            <i />
+          </div>
+        )}
+
         <div className="stage-actions" aria-label="Hero actions">
           <a className="primary-action" href="#projects">
             <Sparkles size={18} aria-hidden="true" />
-            View Work
+            Explore work
           </a>
         </div>
 
@@ -477,7 +603,7 @@ export default function Home() {
         </a>
       </section>
 
-      <section id="about" className="content-band about-band">
+      <section id="about" className={`content-band about-band scroll-panel ${activeSection === 'about' ? 'is-in-view' : ''}`}>
         <div className="section-label">About</div>
         <div className="section-content">
           <h2>Character first, then content.</h2>
@@ -489,20 +615,24 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="projects" className="content-band projects-band">
+      <section id="projects" className={`content-band projects-band scroll-panel ${activeSection === 'projects' ? 'is-in-view' : ''}`}>
         <div className="section-label">Projects</div>
         <div className="project-grid">
           {projects.map((project) => (
-            <article className="project-tile" key={project.title}>
-              <span>{project.tag}</span>
-              <h3>{project.title}</h3>
-              <p>{project.text}</p>
+            <article className="project-tile" key={project.zh.title}>
+              <span>{project[language].tag}</span>
+              <h3>{project[language].title}</h3>
+              <p>{project[language].text}</p>
+              <button className="project-detail-link" type="button" onClick={() => setSelectedProject(project)}>
+                {language === 'zh' ? '查看详情' : 'View details'}
+                <ArrowUpRight size={17} aria-hidden="true" />
+              </button>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="contact" className="content-band contact-band">
+      <section id="contact" className={`content-band contact-band scroll-panel ${activeSection === 'contact' ? 'is-in-view' : ''}`}>
         <div className="section-label">Contact</div>
         <div className="section-content">
           <h2>Ready for the next layer.</h2>
@@ -510,12 +640,69 @@ export default function Home() {
             The next practical step is replacing the single PNG with true separated layers for eyes,
             face, hands, and braids, so the character can blink, look around, and react by section.
           </p>
+          <div className="resume-panel">
+            <div>
+              <span className="resume-eyebrow">RESUME / PDF</span>
+              <h3>下载简历</h3>
+              <p>填写手机号后获取我的最新简历。</p>
+            </div>
+            <form className="resume-form" onSubmit={unlockResume}>
+              <label htmlFor="resume-phone">手机号</label>
+              <div className="resume-input-row">
+                <input
+                  id="resume-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  placeholder="请输入手机号"
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    if (resumeError) setResumeError('');
+                  }}
+                />
+                <button type="submit">验证</button>
+              </div>
+              {resumeError && <p className="resume-error" role="alert">{resumeError}</p>}
+              {resumeUnlocked && (
+                <a className="resume-download" href="/resume.pdf" download>
+                  下载 PDF 简历
+                  <Download size={17} aria-hidden="true" />
+                </a>
+              )}
+              <p className="resume-note">手机号仅在当前浏览器中用于验证，不会被保存或上传。</p>
+            </form>
+          </div>
           <a className="contact-link" href="mailto:hello@example.com">
             <Mail size={18} aria-hidden="true" />
             hello@example.com
           </a>
         </div>
       </section>
+
+      <Dialog open={selectedProject !== null} onOpenChange={(open) => !open && setSelectedProject(null)}>
+        {selectedProject && (
+          <DialogContent className="project-dialog" showCloseButton>
+            <DialogHeader>
+              <span className="dialog-tag">{selectedProject[language].tag}</span>
+              <DialogTitle>{selectedProject[language].title}</DialogTitle>
+              <DialogDescription>{selectedProject[language].overview}</DialogDescription>
+            </DialogHeader>
+            <div className="dialog-language-switch" aria-label="Project detail language">
+              <button className={language === 'zh' ? 'is-active' : ''} type="button" onClick={() => setLanguage('zh')}>中文</button>
+              <button className={language === 'en' ? 'is-active' : ''} type="button" onClick={() => setLanguage('en')}>English</button>
+            </div>
+            <div className="project-detail-block">
+              <h3>{language === 'zh' ? '技术路线' : 'Technical approach'}</h3>
+              <ol>{selectedProject[language].route.map((item) => <li key={item}>{item}</li>)}</ol>
+            </div>
+            <div className="project-detail-block">
+              <h3>{language === 'zh' ? '最终成果' : 'Outcome'}</h3>
+              <ul>{selectedProject[language].outcome.map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </main>
   );
 }
